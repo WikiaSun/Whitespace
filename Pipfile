@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 "discord.py" = "*"
+jishaku = "*"
+pyyaml = "*"
 
 [dev-packages]
 

@@ -1,0 +1,7 @@
+default_prefix: '!'
+
+credentials:
+  token: token
+
+cogs:
+  - jishaku
