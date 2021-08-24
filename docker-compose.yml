@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  whitespace:
+    build: .
+    environment: 
+      PGPORT: 5432
+      PGHOST: 'database'
+      PGUSER: 'wikiasun'
+      PGDATABASE: 'wikiasun'
+      PGPASSWORD: '${POSTGRES_PASSWORD}'
+      PYTHONUNBUFFERED: 1
+    depends_on: 
+      - database
+      - migration
+
+  migration:
+    image: amacneil/dbmate
+    command: --wait up
+    environment: 
+      DATABASE_URL: 'postgres://wikiasun:${POSTGRES_PASSWORD}@database/wikiasun?sslmode=disable'
+    volumes:
+      - ./db:/db
+    depends_on: 
+      - database
+
+  database:
+    image: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment: 
+      POSTGRES_USER: 'wikiasun'
+      POSTGRES_DB: 'wikiasun'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD}' 
+
+volumes:
+  db-data:
+  
