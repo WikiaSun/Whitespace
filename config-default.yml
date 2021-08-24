@@ -1,7 +1,13 @@
 default_prefix: '!'
+debug: false
 
 credentials:
   token: token
+
+test_guilds:
+ - 538628976067870720 # Bananas
+ - 509431359761285120 # Official server
+ - 560468092866527244 # Dark Castle
 
 cogs:
   - jishaku
