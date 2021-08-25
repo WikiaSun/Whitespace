@@ -14,3 +14,4 @@ test_guilds:
 
 cogs:
   - jishaku
+  - cogs.help
