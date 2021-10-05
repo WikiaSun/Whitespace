@@ -39,33 +39,4 @@ class Bot(slash.SlashBot):
         
 
 bot = Bot()
-
-@bot.command(name='info', aliases=['invite'])
-async def bot_info(ctx):
-    """Показывает информацию о боте"""
-    em = discord.Embed(
-        title=f"Приветики, {ctx.author.name}!", 
-        description=bot.description + "\n\nМои владельцы — Infinity#1806 и Шпик#2212, я написан на языке Python.", 
-        colour=config.primary_color
-    )
-    em.add_field(
-        name="Версия", 
-        value="""Версия Discord.py: `v{}`
-        \nВерсия бота: `v3.0.0.a` (последнее обновление: недавно)
-        """.format(discord.__version__)
-    )
-    em.add_field(
-        name='Благодарности', 
-        value="""· Спасибо автору замечательной библиотеки discord.py (Danny#0007), без которого данного бота бы не существовало. 
-        \n· Спасибо участнику Rrkkm#2006 за создание аватарки для бота 
-        \n· Спасибо всем, кто активно тестирует бота и помогает найти ошибки. Благодаря вам он становится лучше.
-        """
-    )
-    em.set_thumbnail(url='https://vignette.wikia.nocookie.net/plutonian-test-lab/images/4/4e/Bot_img.png/revision/latest?cb=20200417104558&format=original&path-prefix=ru')
-    
-    bot_info_view = ui.View()
-    bot_info_view.add_item(ui.Button(label="Пригласить бота", url="https://discord.com/api/oauth2/authorize?client_id=509427930233831444&permissions=939871331&scope=bot%20applications.commands"))
-    bot_info_view.add_item(ui.Button(label="Сервер поддержки", url="https://discord.gg/GVvAmTh"))
-    await ctx.send(embed=em, view=bot_info_view)
-
 bot.run(config.credentials.token)

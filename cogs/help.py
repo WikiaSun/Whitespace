@@ -86,7 +86,7 @@ class WhiteHelp(slash.MinimalHelpCommand):
         self, 
         ctx,
         *, 
-        command = slash.Option(description="Команда или модуль, для которого необходимо показать справку")
+        command = slash.Option(description="Команда или модуль, для которого необходимо показать справку", default=None)
     ):
         return await super().command_callback(ctx, command=command)
 

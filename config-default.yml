@@ -15,3 +15,8 @@ test_guilds:
 cogs:
   - jishaku
   - cogs.help
+  - cogs.info
+
+emojis:
+  success: "\N{WHITE HEAVY CHECK MARK}"
+  error: "<:no:525380850234163200>"
