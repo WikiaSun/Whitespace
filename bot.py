@@ -1,10 +1,9 @@
-import discord
-from discord import ui
 from discord.ext import commands
 import asyncpg
 
 from config import config
 import slash
+from utils.settings import WhiteGuild
 
 def _prefix_callable(bot, msg):
     # Will be implemented later
@@ -22,8 +21,16 @@ class Bot(slash.SlashBot):
         for cog in config.cogs:
             self.load_extension(cog)
 
+    async def load_guild_settings(self):
+        guilds = await self.pool.fetch("SELECT id, prefix FROM wh_guilds")
+        self.settings = {
+            g["id"]: WhiteGuild(**dict(g), bot=self)
+            for g in guilds
+        }
+    
     async def start(self, *args, **kwargs):
         self.pool = await asyncpg.create_pool()
+        await self.load_guild_settings()
         await super().start(*args, **kwargs)
     
     async def close(self, *args, **kwargs):
