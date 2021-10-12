@@ -1,3 +1,4 @@
+import aiohttp
 from discord.ext import commands
 import asyncpg
 
@@ -40,11 +41,16 @@ class Bot(slash.SlashBot):
     
     async def start(self, *args, **kwargs):
         self.pool = await asyncpg.create_pool()
+        self.session = aiohttp.ClientSession()
+
         await self.load_guild_settings()
+
         await super().start(*args, **kwargs)
     
     async def close(self, *args, **kwargs):
         await self.pool.close()
+        await self.session.close()
+        
         await super().close(*args, **kwargs)
 
     async def on_ready(self):

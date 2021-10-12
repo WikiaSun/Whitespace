@@ -2,6 +2,7 @@ from discord.ext import commands
 
 import slash
 from .settings import GuildSettings
+from .wiki import Wiki
 
 class WhiteContextBase:
     def __init__(self, *args, **kwargs):
@@ -14,6 +15,10 @@ class WhiteContextBase:
             )
         else:
             self.settings = None
+
+    @property
+    def wiki(self):
+        return Wiki(url=self.settings.bound_wiki_url, session=self.bot.session)
     
 class WhiteContext(WhiteContextBase, commands.Context):
     pass
