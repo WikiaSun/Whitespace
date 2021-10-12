@@ -3,7 +3,7 @@ import asyncpg
 
 from config import config
 import slash
-from utils.settings import WhiteGuild
+from utils.settings import GuildSettings
 
 def _prefix_callable(bot, msg):
     # Will be implemented later
@@ -24,7 +24,7 @@ class Bot(slash.SlashBot):
     async def load_guild_settings(self):
         guilds = await self.pool.fetch("SELECT id, prefix FROM wh_guilds")
         self.settings = {
-            g["id"]: WhiteGuild(**dict(g), bot=self)
+            g["id"]: GuildSettings(**dict(g), bot=self)
             for g in guilds
         }
     
