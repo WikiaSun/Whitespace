@@ -3,7 +3,7 @@ import asyncpg
 
 from config import config
 import slash
-from utils.settings import GuildSettings
+from utils.context import WhiteContext, WhiteInteractionContext
 
 def _prefix_callable(bot, msg):
     # Will be implemented later
@@ -21,10 +21,16 @@ class Bot(slash.SlashBot):
         for cog in config.cogs:
             self.load_extension(cog)
 
+    async def get_context(self, message, *, cls=WhiteContext):
+        return await super().get_context(message, cls=cls)
+
+    def get_slash_context(self, interaction, *, cls=WhiteInteractionContext):
+        return super().get_slash_context(interaction, cls=cls)
+
     async def load_guild_settings(self):
         guilds = await self.pool.fetch("SELECT id, prefix FROM wh_guilds")
-        self.settings = {
-            g["id"]: GuildSettings(**dict(g), bot=self)
+        self.prefixes = {
+            g["id"]: g["prefix"]
             for g in guilds
         }
     
