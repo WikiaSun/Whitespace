@@ -53,6 +53,9 @@ class GuildSettings:
             result = await conn.execute(query, *kwargs.values(), self.id)
 
         for field, value in kwargs.items():
+            if field == "prefix":
+                self._bot.prefixes[self.id] = value
+                
             setattr(self, field, value)
 
         return result
