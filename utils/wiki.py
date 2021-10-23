@@ -34,3 +34,12 @@ class Wiki:
         async with self._session.get(self.url + "/api.php", params=params) as resp:
             return await resp.json()
     
+    async def query_nirvana(self, **params):
+        """Queries Nirvana with given params"""
+
+        if not self.url:
+            raise RuntimeError("Wiki url is required to do this")
+
+        params["format"] = "json"
+        async with self._session.get(self.url + "/wikia.php", params=params) as resp:
+            return await resp.json()
