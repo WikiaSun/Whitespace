@@ -16,6 +16,7 @@ cogs:
   - jishaku
   - cogs.help
   - cogs.info
+  - cogs.fandom
 
 emojis:
   success: "\N{WHITE HEAVY CHECK MARK}"

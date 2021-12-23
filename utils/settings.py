@@ -11,10 +11,22 @@ class GuildSettings:
     bot: InitVar[commands.Bot]
 
     bound_wiki_url: Optional[str] = None
+    bound_wiki_name: Optional[str] = None
 
     def __post_init__(self, bot):
         self._bot = bot
         self._pool = bot.pool
+
+    async def query_wiki_info(self, force=False):
+        wiki_attrs = ["bound_wiki_url", "bound_wiki_name"]
+
+        if not force:
+            for attr in wiki_attrs:
+                if getattr(self, attr):
+                    wiki_attrs.remove(attr)
+
+        if len(wiki_attrs) > 0:
+            return await self.query(*wiki_attrs)
 
     async def query(self, *args):
         if not args:

@@ -1,13 +1,29 @@
 from urllib.parse import urlencode
+from utils.errors import WikiNotFound
 
 class Wiki:
     def __init__(self, url=None, id=None, *, session):
         if (url is None) and (id is None):
             raise ValueError("You must specify at least one of: id, url")
 
-        self.url = url
         self.id = id
         self._session = session
+
+        if url.endswith("/"):
+            url = url[:-1]
+        self.url = url
+
+    @classmethod
+    def from_dot_notation(cls, name, session):
+        name = name.split(".")
+        if len(name) == 1:
+            wiki_url = f"https://{name[0]}.fandom.com"
+        elif len(name) == 2:
+            wiki_url = f"https://{name[1]}.fandom.com/{name[0]}"
+        else:
+            raise WikiNotFound
+        
+        return cls(url=wiki_url, session=session)
 
     def url_to(self, page, **params):
         """Returns URL to the given page"""
@@ -22,6 +38,16 @@ class Wiki:
             url += ("?" + urlencode(params))
 
         return url
+
+    def diff_url(self, revid, oldid=None):
+        """Returns URL to the given diff"""
+        params = {
+            "diff": revid
+        }
+        if oldid:
+            params["oldid"] = oldid
+        
+        return f"{self.url}/?{urlencode(params)}"
     
     async def query(self, **params):
         """Queries MediaWiki api with given params"""

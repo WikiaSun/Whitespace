@@ -4,11 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"discord.py" = {editable = true, git = "https://github.com/Rapptz/discord.py"}
+"discord.py" = {editable = true, git = "https://github.com/Herbstblatt/discord.py"}
 jishaku = "*"
 pyyaml = "*"
 psycopg2-binary = "*"
 asyncpg = "*"
+bs4 = "*"
 
 [dev-packages]
 
