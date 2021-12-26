@@ -54,6 +54,10 @@ class Wiki:
 
         if not self.url:
             raise RuntimeError("Wiki url is required to do this")
+        
+        for key, value in params.items():
+            if isinstance(value, bool):
+                params[key] = int(value)
 
         params["action"] = "query"
         params["format"] = "json"

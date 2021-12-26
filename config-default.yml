@@ -17,6 +17,7 @@ cogs:
   - cogs.help
   - cogs.info
   - cogs.fandom
+  - cogs.wikilinks
 
 emojis:
   success: "\N{WHITE HEAVY CHECK MARK}"

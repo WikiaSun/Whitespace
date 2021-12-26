@@ -26,10 +26,10 @@ class Bot(slash.SlashBot):
         for cog in config.cogs:
             self.load_extension(cog)
 
-    async def get_context(self, message, *, cls=WhiteContext):
+    async def get_context(self, message, *, cls=WhiteContext) -> WhiteContext:
         return await super().get_context(message, cls=cls)
 
-    def get_slash_context(self, interaction, *, cls=WhiteInteractionContext):
+    def get_slash_context(self, interaction, *, cls=WhiteInteractionContext) -> WhiteInteractionContext:
         return super().get_slash_context(interaction, cls=cls)
 
     async def load_guild_settings(self):

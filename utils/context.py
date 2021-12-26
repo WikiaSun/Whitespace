@@ -5,7 +5,7 @@ import slash
 from .settings import GuildSettings
 from .wiki import Wiki
 
-class WhiteContextBase:
+class WhiteContextBase(commands.Context):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.guild:
