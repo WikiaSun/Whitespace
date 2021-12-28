@@ -35,6 +35,16 @@ CREATE TABLE public.wh_guilds (
 
 
 --
+-- Name: wh_wikilink_webhooks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.wh_wikilink_webhooks (
+    channel_id bigint NOT NULL,
+    webhook_url text
+);
+
+
+--
 -- Name: schema_migrations schema_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -51,6 +61,14 @@ ALTER TABLE ONLY public.wh_guilds
 
 
 --
+-- Name: wh_wikilink_webhooks wh_wikilink_webhooks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.wh_wikilink_webhooks
+    ADD CONSTRAINT wh_wikilink_webhooks_pkey PRIMARY KEY (channel_id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -62,4 +80,5 @@ ALTER TABLE ONLY public.wh_guilds
 INSERT INTO public.schema_migrations (version) VALUES
     ('20210519201710'),
     ('20211006194734'),
-    ('20211222113737');
+    ('20211222113737'),
+    ('20211226164418');

@@ -1,6 +1,7 @@
 from __future__ import annotations
+
 import re
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from discord.ext import commands
 import discord
@@ -24,13 +25,13 @@ class Link:
             self.title = self.target
 
         self.url = wiki.url_to(self.target)
-        self.match = match
+        self.original = match.group(0)
     
     def __repr__(self):
         return f"<Link target={self.target} title={self.title} url={self.url}>"
 
     def to_hyperlink(self) -> str:
-        return f"[{self.title}]({self.url})"
+        return f"[{self.title}](<{self.url}>)"
 
     def to_link(self) -> str:
         return f"<{self.url}>"
@@ -73,15 +74,106 @@ class Wikilinks(commands.Cog):
 
         return list(links.values())
 
+    async def create_webhook(self, channel: discord.TextChannel) -> discord.Webhook:
+        webhook = await channel.create_webhook(name="Wikilink Manager")
+
+        assert self.bot.pool is not None
+        query = """
+        INSERT INTO wh_wikilink_webhooks VALUES ($1, $2)
+        ON CONFLICT (channel_id) DO UPDATE
+        SET webhook_url = excluded.webhook_url
+        """
+        async with self.bot.pool.acquire() as conn:
+            await conn.execute(query, channel.id, webhook.url)
+        
+        return webhook
+
+    async def get_webhook(self, channel: discord.TextChannel) -> discord.Webhook:
+        assert self.bot.pool is not None
+        
+        query = "SELECT webhook_url FROM wh_wikilink_webhooks WHERE channel_id=$1"
+        async with self.bot.pool.acquire() as conn:
+            result = await conn.fetchrow(query, channel.id)
+        
+        if result is None:
+            return await self.create_webhook(channel)
+
+        return discord.Webhook.from_url(result["webhook_url"], session=self.bot.session)
+
+    def get_webhook_channel(self, channel: discord.abc.Messageable) -> discord.TextChannel:
+        if isinstance(channel, discord.Thread):
+            result = channel.parent
+        elif isinstance(channel, discord.TextChannel):
+            result = channel
+        else:
+            raise ValueError("Cannot create webhooks in this channel")
+
+        return result # type: ignore
+
+    async def resend_message(self, ctx: WhiteContextBase, content: str, webhook: discord.Webhook) -> None:
+        try:
+            message = ctx.message
+            attrs: Dict[str, Any] = dict(
+                content=content,
+                files=[
+                    await attachment.to_file(spoiler=attachment.is_spoiler()) 
+                    for attachment in message.attachments
+                ],
+                username=message.author.display_name,
+                avatar_url=message.author.display_avatar.url,
+            )
+            if isinstance(ctx.channel, discord.Thread):
+                attrs["thread"] = ctx.channel
+            
+            await webhook.send(**attrs)
+        except discord.NotFound:
+            channel = self.get_webhook_channel(ctx.channel)
+            new_webhook = await self.create_webhook(channel)
+            await self.resend_message(ctx, content, new_webhook)
+
+    async def send_links(self, channel: discord.abc.Messageable, links: List[Link]) -> discord.Message:
+        content = "\n".join(link.to_link() for link in links)
+        return await channel.send(content)
+
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
+        if message.author.bot:
+            return
         if message.guild is None:
             return
         
         ctx = await self.bot.get_context(message)
         await ctx.settings.query_wiki_info() # type: ignore # type checker cannot figure out that when ctx.guild is not None, ctx.settings is also not None
+        
         links = await self.find_wikilinks(ctx, message.content)
+        if len(links) == 0:
+            return
 
+        channel = self.get_webhook_channel(ctx.channel)
+        try:
+            webhook = await self.get_webhook(channel)
+        except discord.Forbidden:
+            await self.send_links(ctx.channel, links)
+            return
+        
+        content = message.content
+        for link in links:
+            content = content.replace(link.original, link.to_hyperlink(), 1)
+        
+        try:
+            await self.resend_message(
+                ctx=ctx,
+                content=content,
+                webhook=webhook
+            )
+        except discord.HTTPException:
+            await self.send_links(ctx.channel, links)
+            return
+
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            await ctx.send("Упс! Получилось некрасиво, потому что у меня нет права управлять сообщениями. Пожалуйста, выдайте мне его, и я смогу удалить исходное сообщение.")
 
 def setup(bot: Bot) -> None:
     bot.add_cog(Wikilinks(bot))
