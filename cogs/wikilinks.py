@@ -1,18 +1,62 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from discord.ext import commands
 import discord
 
+from utils.wiki import Wiki
 if TYPE_CHECKING:
     from bot import Bot
-    from utils.wiki import Wiki
     from utils.context import WhiteContextBase
+
+
+def wiki_link(url: str, delimiter: str = "_") -> Callable[[str], str]:
+    def get_url(page: str) -> str:
+        return url.format(page=page.replace(" ", delimiter))
+
+    return get_url
+
+def internal_wiki_link(link: str) -> str:
+    wiki_name, page = link.split(":", 1)
+    wiki = Wiki.from_dot_notation(wiki_name)
+    return wiki.url_to(page)
+
 
 WIKILINK_REGEX = re.compile(r"\[\[(.+?)(?:\|(.*?))?\]\]")
 CODEBLOCK_REGEX = re.compile(r"(`{1,3}).*?\1", re.DOTALL)
+PREFIXES: Dict[str, Callable[[str], str]] = {
+    # Fandom
+    "w:c":           internal_wiki_link,
+    "ww":            wiki_link("https://wikies.fandom.com/wiki/{page}"),
+    "w:ru":          wiki_link("https://community.fandom.com/ru/wiki/{page}"),
+    "w":             wiki_link("https://community.fandom.com/wiki/{page}"),
+    "dev":           wiki_link("https://dev.fandom.com/wiki/{page}"),
+    "soap":          wiki_link("https://soap.fandom.com/wiki/{page}"),
+
+    # Wikipedia
+    "wp:ru":         wiki_link("https://ru.wikipedia.org/wiki/{page}"),
+    "wikipedia:ru":  wiki_link("https://ru.wikipedia.org/wiki/{page}"),
+    "wp":            wiki_link("https://en.wikipedia.org/wiki/{page}"),
+    "wikipedia":     wiki_link("https://en.wikipedia.org/wiki/{page}"),
+
+    # Wiktionary
+    "wiktionary:ru": wiki_link("https://ru.wiktionary.org/wiki/{page}"),
+    "wikt:ru":       wiki_link("https://ru.wiktionary.org/wiki/{page}"),
+    "wiktionary":    wiki_link("https://en.wiktionary.org/wiki/{page}"),
+    "wikt":          wiki_link("https://en.wiktionary.org/wiki/{page}"),
+
+    # Meta and mediawiki
+    "m":             wiki_link("https://meta.wikimedia.org/wiki/{page}"),
+    "meta":          wiki_link("https://meta.wikimedia.org/wiki/{page}"),
+    "mw":            wiki_link("https://mediawiki.org/wiki/{page}"),
+
+    # Other
+    "g":             wiki_link("https://google.com/search?q={page}", delimiter="+"),
+    "google":        wiki_link("https://google.com/search?q={page}", delimiter="+"),
+}
+
 
 class Link:
     def __init__(self, match: re.Match, wiki: Wiki) -> None:
@@ -24,9 +68,17 @@ class Link:
         if self.title is None:
             self.title = self.target
 
-        self.url = wiki.url_to(self.target)
+        self.wiki = wiki
         self.original = match.group(0)
+        self.url = self.make_url()
     
+    def make_url(self) -> str:
+        for prefix, func in PREFIXES.items():
+            if self.target.startswith(prefix):
+                return func(self.target[len(prefix) + 1:])
+
+        return self.wiki.url_to(self.target)
+
     def __repr__(self):
         return f"<Link target={self.target} title={self.title} url={self.url}>"
 
@@ -36,17 +88,24 @@ class Link:
     def to_link(self) -> str:
         return f"<{self.url}>"
 
+
 class Wikilinks(commands.Cog):
     """Преобразовывает [[текст в квадратных скобках]] в ссылки на статьи на вики."""
 
     def __init__(self, bot: Bot):
         self.bot = bot
 
-    def _parse_wikilinks(self, ctx: WhiteContextBase, text: str) -> Dict[str, Link]:
+    async def find_wikilinks(self, ctx: WhiteContextBase) -> List[Link]:
+        text = ctx.message.content
         codeblock_matches = list(CODEBLOCK_REGEX.finditer(text))
+        link_matches = list(WIKILINK_REGEX.finditer(text))
+        if len(link_matches) == 0:
+            return []
 
-        links = {}
-        for link in WIKILINK_REGEX.finditer(text):
+        await ctx.settings.query_wiki_info() # type: ignore
+
+        links = []
+        for link in link_matches:
             is_within_codeblock = False
             
             for match in codeblock_matches:
@@ -56,23 +115,9 @@ class Wikilinks(commands.Cog):
             if is_within_codeblock:
                 continue
             
-            links[link.group(1)] = Link(link, wiki=ctx.wiki)
+            links.append(Link(link, wiki=ctx.wiki))
 
         return links
-
-    async def find_wikilinks(self, ctx: WhiteContextBase, text: str) -> List[Link]:
-        links = self._parse_wikilinks(ctx, text)
-        if len(links) == 0:
-            return []
-
-        interwiki = await ctx.wiki.query(
-            titles="".join(links),
-            iwurl=True
-        )
-        for entry in interwiki["query"].get("interwiki", []):
-            links[entry["title"]].url = entry["url"]
-
-        return list(links.values())
 
     async def create_webhook(self, channel: discord.TextChannel) -> discord.Webhook:
         webhook = await channel.create_webhook(name="Wikilink Manager")
@@ -143,9 +188,7 @@ class Wikilinks(commands.Cog):
             return
         
         ctx = await self.bot.get_context(message)
-        await ctx.settings.query_wiki_info() # type: ignore # type checker cannot figure out that when ctx.guild is not None, ctx.settings is also not None
-        
-        links = await self.find_wikilinks(ctx, message.content)
+        links = await self.find_wikilinks(ctx)
         if len(links) == 0:
             return
 

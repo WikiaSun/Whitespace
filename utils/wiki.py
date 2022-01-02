@@ -2,7 +2,7 @@ from urllib.parse import urlencode
 from utils.errors import WikiNotFound
 
 class Wiki:
-    def __init__(self, url=None, id=None, *, session):
+    def __init__(self, url=None, id=None, *, session=None):
         if (url is None) and (id is None):
             raise ValueError("You must specify at least one of: id, url")
 
@@ -14,7 +14,7 @@ class Wiki:
         self.url = url
 
     @classmethod
-    def from_dot_notation(cls, name, session):
+    def from_dot_notation(cls, name, session=None):
         name = name.split(".")
         if len(name) == 1:
             wiki_url = f"https://{name[0]}.fandom.com"
