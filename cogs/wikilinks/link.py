@@ -11,6 +11,8 @@ class Link:
             self.title = self.target.split(":")[-1]
         if self.title is None:
             self.title = self.target
+        ending = match.group(3) or ""
+        self.title += ending
 
         self.wiki = wiki
         self.original = match.group(0)
