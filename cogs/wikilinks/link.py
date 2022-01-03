@@ -18,7 +18,7 @@ class Link:
     
     def make_url(self) -> str:
         for prefix, func in PREFIXES.items():
-            if self.target.startswith(prefix):
+            if self.target.startswith(prefix + ":"):
                 return func(self.target[len(prefix) + 1:])
 
         return self.wiki.url_to(self.target)
