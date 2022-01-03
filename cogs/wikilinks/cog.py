@@ -1,93 +1,19 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List
 
 from discord.ext import commands
 import discord
 
-from utils.wiki import Wiki
+from .link import Link
 if TYPE_CHECKING:
     from bot import Bot
     from utils.context import WhiteContextBase
 
 
-def wiki_link(url: str, delimiter: str = "_") -> Callable[[str], str]:
-    def get_url(page: str) -> str:
-        return url.format(page=page.replace(" ", delimiter))
-
-    return get_url
-
-def internal_wiki_link(link: str) -> str:
-    wiki_name, page = link.split(":", 1)
-    wiki = Wiki.from_dot_notation(wiki_name)
-    return wiki.url_to(page)
-
-
 WIKILINK_REGEX = re.compile(r"\[\[(.+?)(?:\|(.*?))?\]\]")
 CODEBLOCK_REGEX = re.compile(r"(`{1,3}).*?\1", re.DOTALL)
-PREFIXES: Dict[str, Callable[[str], str]] = {
-    # Fandom
-    "w:c":           internal_wiki_link,
-    "ww":            wiki_link("https://wikies.fandom.com/wiki/{page}"),
-    "w:ru":          wiki_link("https://community.fandom.com/ru/wiki/{page}"),
-    "w":             wiki_link("https://community.fandom.com/wiki/{page}"),
-    "dev":           wiki_link("https://dev.fandom.com/wiki/{page}"),
-    "soap":          wiki_link("https://soap.fandom.com/wiki/{page}"),
-
-    # Wikipedia
-    "wp:ru":         wiki_link("https://ru.wikipedia.org/wiki/{page}"),
-    "wikipedia:ru":  wiki_link("https://ru.wikipedia.org/wiki/{page}"),
-    "wp":            wiki_link("https://en.wikipedia.org/wiki/{page}"),
-    "wikipedia":     wiki_link("https://en.wikipedia.org/wiki/{page}"),
-
-    # Wiktionary
-    "wiktionary:ru": wiki_link("https://ru.wiktionary.org/wiki/{page}"),
-    "wikt:ru":       wiki_link("https://ru.wiktionary.org/wiki/{page}"),
-    "wiktionary":    wiki_link("https://en.wiktionary.org/wiki/{page}"),
-    "wikt":          wiki_link("https://en.wiktionary.org/wiki/{page}"),
-
-    # Meta and mediawiki
-    "m":             wiki_link("https://meta.wikimedia.org/wiki/{page}"),
-    "meta":          wiki_link("https://meta.wikimedia.org/wiki/{page}"),
-    "mw":            wiki_link("https://mediawiki.org/wiki/{page}"),
-
-    # Other
-    "g":             wiki_link("https://google.com/search?q={page}", delimiter="+"),
-    "google":        wiki_link("https://google.com/search?q={page}", delimiter="+"),
-}
-
-
-class Link:
-    def __init__(self, match: re.Match, wiki: Wiki) -> None:
-        self.target: str = match.group(1)
-        self.title: Optional[str] = match.group(2)
-
-        if self.title == "":
-            self.title = self.target.split(":")[-1]
-        if self.title is None:
-            self.title = self.target
-
-        self.wiki = wiki
-        self.original = match.group(0)
-        self.url = self.make_url()
-    
-    def make_url(self) -> str:
-        for prefix, func in PREFIXES.items():
-            if self.target.startswith(prefix):
-                return func(self.target[len(prefix) + 1:])
-
-        return self.wiki.url_to(self.target)
-
-    def __repr__(self):
-        return f"<Link target={self.target} title={self.title} url={self.url}>"
-
-    def to_hyperlink(self) -> str:
-        return f"[{self.title}](<{self.url}>)"
-
-    def to_link(self) -> str:
-        return f"<{self.url}>"
-
 
 class Wikilinks(commands.Cog):
     """Преобразовывает [[текст в квадратных скобках]] в ссылки на статьи на вики."""
@@ -217,6 +143,3 @@ class Wikilinks(commands.Cog):
             await ctx.message.delete()
         except discord.Forbidden:
             await ctx.send("Упс! Получилось некрасиво, потому что у меня нет права управлять сообщениями. Пожалуйста, выдайте мне его, и я смогу удалить исходное сообщение.")
-
-def setup(bot: Bot) -> None:
-    bot.add_cog(Wikilinks(bot))
