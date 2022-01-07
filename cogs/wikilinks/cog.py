@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from utils.context import WhiteContextBase
 
 
-WIKILINK_REGEX = re.compile(r"\[\[(.+?)(?:\|(.*?))?\]\]([^ ]+)?")
+WIKILINK_REGEX = re.compile(r"\[\[(.+?)(?:\|(.*?))?\]\]([^ `\n]+)?")
 CODEBLOCK_REGEX = re.compile(r"(`{1,3}).*?\1", re.DOTALL)
 
 class Wikilinks(commands.Cog):
