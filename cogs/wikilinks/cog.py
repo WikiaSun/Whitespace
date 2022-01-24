@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 WIKILINK_REGEX = re.compile(r"\[\[(.+?)(?:\|(.*?))?\]\]([^ `\n]+)?")
 CODEBLOCK_REGEX = re.compile(r"(`{1,3}).*?\1", re.DOTALL)
 
+
 class Wikilinks(commands.Cog):
     """Преобразовывает [[текст в квадратных скобках]] в ссылки на статьи на вики."""
 
@@ -28,7 +29,7 @@ class Wikilinks(commands.Cog):
         if len(link_matches) == 0:
             return []
 
-        await ctx.settings.query_wiki_info() # type: ignore
+        await ctx.settings.query_wiki_info()  # type: ignore
 
         links = []
         for link in link_matches:
@@ -79,11 +80,22 @@ class Wikilinks(commands.Cog):
         else:
             raise ValueError("Cannot create webhooks in this channel")
 
-        return result # type: ignore
+        return result  # type: ignore
 
     async def resend_message(self, ctx: WhiteContextBase, content: str, webhook: discord.Webhook) -> None:
         try:
             message = ctx.message
+
+            if (reference := message.reference) is not None and isinstance(reference.resolved, discord.Message):
+                msg = f"> Ответ на [сообщение]({reference.jump_url}) от "
+                if (author := reference.resolved.author) in message.mentions:
+                    msg += author.mention
+                else:
+                    msg += f"**{author}**"
+                msg += "\n\n"
+
+                content = msg + content
+
             attrs: Dict[str, Any] = dict(
                 content=content,
                 files=[
@@ -92,11 +104,13 @@ class Wikilinks(commands.Cog):
                 ],
                 username=message.author.display_name,
                 avatar_url=message.author.display_avatar.url,
+                allowed_mentions=discord.AllowedMentions(everyone=False, roles=False)
             )
             if isinstance(ctx.channel, discord.Thread):
                 attrs["thread"] = ctx.channel
-            
+
             await webhook.send(**attrs)
+
         except discord.NotFound:
             channel = self.get_webhook_channel(ctx.channel)
             new_webhook = await self.create_webhook(channel)
@@ -142,4 +156,5 @@ class Wikilinks(commands.Cog):
         try:
             await ctx.message.delete()
         except discord.Forbidden:
-            await ctx.send("Упс! Получилось некрасиво, потому что у меня нет права управлять сообщениями. Пожалуйста, выдайте мне его, и я смогу удалить исходное сообщение.")
+            await ctx.send("Упс! Получилось некрасиво, потому что у меня нет права управлять сообщениями."
+                           "Пожалуйста, выдайте мне его, и я смогу удалить исходное сообщение.")
