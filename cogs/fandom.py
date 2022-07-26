@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import aiohttp
 from discord.ext import commands
@@ -6,9 +7,12 @@ import discord
 from discord.utils import format_dt
 
 from config import config
-import slash
 from utils.converters import PageConverter, WikiConverter
 from utils.errors import WikiNotFound
+from utils.wiki import Wiki
+
+if TYPE_CHECKING:
+    from utils.context import WhiteContext
 
 class Fandom(commands.Cog, name="Фэндом"):
     """Команды для взаимодействия с вики на Фэндоме."""
@@ -16,19 +20,27 @@ class Fandom(commands.Cog, name="Фэндом"):
     def __init__(self, bot):
         self.bot = bot
 
-    @slash.command()
+    @commands.hybrid_command()
     async def page(
         self,
-        ctx,
-        wiki: WikiConverter = slash.Option(description="Вики, на которой нужно искать страницу."),
+        ctx: "WhiteContext",
+        wiki: Wiki = commands.param(converter=WikiConverter),
         *,
-        name: PageConverter = slash.Option(description="Имя страницы")
+        name: str = commands.param(converter=PageConverter)
     ):
-        """Показывает информацию о странице на вики (если не указана, то проверяется вики по умолчанию)."""
+        """Показывает информацию о странице на вики (если не указана, то проверяется вики по умолчанию).
+        
+        Аргументы:
+            wiki: Вики, на которой нужно искать страницу
+            name: Имя страницы
+        """
         await ctx.defer()
         if wiki is None:
-            await ctx.settings.query_wiki_info()
-            wiki = ctx.wiki
+            if ctx.settings is None:
+                wiki = Wiki.from_dot_notation("ru.community", session=ctx.bot.session)
+            else:
+                await ctx.settings.query_wiki_info()
+                wiki = ctx.wiki
         
         try:
             data = await wiki.query_nirvana(
@@ -68,11 +80,16 @@ class Fandom(commands.Cog, name="Фэндом"):
         em.set_footer(text=f"ID: {data['id']}")
         await ctx.send(embed=em)
 
-    async def cog_command_error(self, ctx, error):
-        error = error.original
-
-        if isinstance(error, WikiNotFound):
+    @page.error
+    async def page_error(self, ctx, error: commands.CommandError):
+        unwrapped = error
+        while original := getattr(unwrapped, "original", None):
+            unwrapped = original
+        
+        if isinstance(unwrapped, WikiNotFound):
             await ctx.send(f"{config.emojis.error} | Вики с данным адресом не найдена.")
+        else:
+            raise error
 
-def setup(bot):
-    bot.add_cog(Fandom(bot))
+async def setup(bot: commands.Bot):
+    await bot.add_cog(Fandom(bot))

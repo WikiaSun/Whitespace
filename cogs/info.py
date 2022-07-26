@@ -1,23 +1,27 @@
 import random
+from typing import TYPE_CHECKING
 import discord
-from discord import ui
+from discord import ui, app_commands
 from discord.ext import commands
 from discord.utils import format_dt
 
-import slash
 from config import config
 
+if TYPE_CHECKING:
+    from ..bot import Bot
+    from utils.context import WhiteContext
+
 class Info(commands.Cog, name="Информация"):
-    def __init__(self, bot):
+    def __init__(self, bot: "Bot"):
         self.bot = bot
 
-    @slash.command(aliases=["about", "invite"])
-    async def info(self, ctx):
+    @commands.hybrid_command(name="info")
+    async def info(self, ctx: "WhiteContext"):
         """Показывает информацию о боте"""
         em = discord.Embed(
             title=f"Приветики, {ctx.author.name}!", 
             description=self.bot.description + "\n\nМои владельцы — Infinity#1806 и Шпик#2212, я написан на языке Python.", 
-            colour=config.primary_color
+            color=config.primary_color
         )
         em.add_field(
             name="Версия", 
@@ -39,33 +43,39 @@ class Info(commands.Cog, name="Информация"):
         bot_info_view.add_item(ui.Button(label="Сервер поддержки", url="https://discord.gg/GVvAmTh"))
         await ctx.send(embed=em, view=bot_info_view)
 
-    @slash.command(name="random")
-    async def random(
-        self, 
-        ctx, 
-        num_start: int = slash.Option(description="Нижняя граница диапазона"),
-        num_end: int = slash.Option(description="Верхняя граница диапазона")
-    ):
+    @commands.hybrid_command(name="random")
+    @app_commands.describe(
+        num_start="Нижняя граница диапазона",
+        num_end="Верхняя граница диапазона"
+    )
+    async def random(self, ctx: "WhiteContext", num_start: int, num_end: int):
         """Выводит случайное число в диапазоне, указанном в параметрах."""
-        await ctx.send(random.randint(num_start, num_end))
+        await ctx.send(str(random.randint(num_start, num_end)))
     
 
-    @slash.command(name="choice")
-    async def random_choice(self, ctx, elements = slash.Option(description="Список элементов для выбора, разделитель — `|`.")):
+    @commands.hybrid_command(name="choice")
+    @app_commands.describe(
+        elements="Список элементов для выбора, разделитель — `|`."
+    )
+    async def random_choice(self, ctx, elements: str):
         """Выбирает случайный элемент из списка."""
-        elements = [e.strip() for e in elements.split("|")]
-        if len(elements) < 2:
+        elements_list = [e.strip() for e in elements.split("|")]
+        if len(elements_list) < 2:
             await ctx.send(f"{config.emojis.error} | Укажите как минимум два варианта.")
             return
 
-        await ctx.send(random.choice(elements))
+        await ctx.send(random.choice(elements_list))
 
-    @slash.command(name="serverinfo")
-    async def guildinfo(self, ctx):
+    @commands.hybrid_command(name="serverinfo")
+    @app_commands.guild_only()
+    async def guildinfo(self, ctx: "WhiteContext"):
         """Показывает информацию о сервере."""
+        assert ctx.guild is not None
+
         em = discord.Embed(colour=89847)
-        em.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon.url)
-        em.set_thumbnail(url=ctx.guild.icon.url)
+        icon_url = getattr(ctx.guild.icon, "url", None)
+        em.set_author(name=ctx.guild.name, icon_url=icon_url)
+        em.set_thumbnail(url=icon_url)
 
         text_channels = 0
         voice_channels = 0
@@ -120,8 +130,8 @@ class Info(commands.Cog, name="Информация"):
         )
         await ctx.send(embed=em)
 
-def setup(bot):
-    bot.add_cog(Info(bot))
+async def setup(bot: "Bot"):
+    await bot.add_cog(Info(bot))
 
-def teardown(bot):
-    bot.remove_cog("help")
+async def teardown(bot: "Bot"):
+    await bot.remove_cog("info")

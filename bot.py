@@ -1,10 +1,11 @@
+from typing import Dict
 import aiohttp
+import discord
 from discord.ext import commands
 import asyncpg
 
 from config import config
-import slash
-from utils.context import WhiteContext, WhiteInteractionContext
+from utils.context import WhiteContext
 
 def _prefix_callable(bot, msg):
     if not msg.guild:
@@ -14,44 +15,65 @@ def _prefix_callable(bot, msg):
 
     return commands.when_mentioned_or(prefix)(bot, msg)
 
-class Bot(slash.SlashBot):
+class Bot(commands.Bot):
+    pool: asyncpg.Pool
+
     def __init__(self):
+        intents = discord.Intents(
+            guilds=True,
+            messages=True,
+            message_content=True,
+            members=True
+        )
+        allowed_mentions = discord.AllowedMentions(
+            everyone=False, 
+            roles=False
+        )
+        if config.debug:
+            self.guild_ids = config.test_guilds
+        else:
+            self.guild_ids = None
+            
         super().__init__(
-            command_prefix=_prefix_callable, 
+            command_prefix=_prefix_callable,
+            intents=intents,
+            allowed_mentions=allowed_mentions,
             description=config.description,
-            register_commands_on_startup=not config.debug,
-            guild_ids=config.test_guilds if config.debug else None
         )
 
-        for cog in config.cogs:
-            self.load_extension(cog)
+    async def sync(self):
+        if self.guild_ids:
+            for guild_id in self.guild_ids:
+                guild = discord.Object(guild_id)
+                self.tree.copy_global_to(guild=guild)
+                await self.tree.sync(guild=guild)
+        else:
+            await self.tree.sync()
 
-    async def get_context(self, message, *, cls=WhiteContext) -> WhiteContext:
-        return await super().get_context(message, cls=cls)
-
-    def get_slash_context(self, interaction, *, cls=WhiteInteractionContext) -> WhiteInteractionContext:
-        return super().get_slash_context(interaction, cls=cls)
-
-    async def load_guild_settings(self):
-        guilds = await self.pool.fetch("SELECT id, prefix FROM wh_guilds")
-        self.prefixes = {
-            g["id"]: g["prefix"]
-            for g in guilds
-        }
-    
-    async def start(self, *args, **kwargs):
-        self.pool = await asyncpg.create_pool()
+    async def setup_hook(self):
+        self.pool = await asyncpg.create_pool() # type: ignore # idk why it's Pool | None
         self.session = aiohttp.ClientSession()
 
-        await self.load_guild_settings()
+        self.prefixes = await self.get_prefixes()
 
-        await super().start(*args, **kwargs)
-    
+        for cog in config.cogs:
+            await self.load_extension(cog)
+
     async def close(self, *args, **kwargs):
         await self.pool.close()
         await self.session.close()
         
         await super().close(*args, **kwargs)
+
+    async def get_context(self, origin, cls=WhiteContext) -> WhiteContext:
+        return await super().get_context(origin, cls=cls)
+
+    async def get_prefixes(self) -> Dict[int, str]:
+        guilds = await self.pool.fetch("SELECT id, prefix FROM wh_guilds")
+        return {
+            g["id"]: g["prefix"]
+            for g in guilds
+        }
 
     async def on_ready(self):
         print('Logged on as {0} (ID: {0.id})'.format(self.user))
@@ -62,4 +84,6 @@ class Bot(slash.SlashBot):
         
 
 bot = Bot()
-bot.run(config.credentials.token)
+
+if __name__ == "__main__":
+    bot.run(config.credentials.token)

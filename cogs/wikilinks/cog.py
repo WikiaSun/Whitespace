@@ -6,10 +6,11 @@ from typing import TYPE_CHECKING, Any, Dict, List
 from discord.ext import commands
 import discord
 
+from utils.context import WhiteContext
+
 from .link import Link
 if TYPE_CHECKING:
     from bot import Bot
-    from utils.context import WhiteContextBase
 
 
 WIKILINK_REGEX = re.compile(r"\[\[(.+?)(?:\|(.*?))?\]\]([^ `\n]+)?")
@@ -22,7 +23,7 @@ class Wikilinks(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
-    async def find_wikilinks(self, ctx: WhiteContextBase) -> List[Link]:
+    async def find_wikilinks(self, ctx: WhiteContext) -> List[Link]:
         text = ctx.message.content
         codeblock_matches = list(CODEBLOCK_REGEX.finditer(text))
         link_matches = list(WIKILINK_REGEX.finditer(text))
@@ -82,7 +83,7 @@ class Wikilinks(commands.Cog):
 
         return result  # type: ignore
 
-    async def resend_message(self, ctx: WhiteContextBase, content: str, webhook: discord.Webhook) -> None:
+    async def resend_message(self, ctx: WhiteContext, content: str, webhook: discord.Webhook) -> None:
         try:
             message = ctx.message
 

@@ -1,43 +1,69 @@
 import re
+from typing import TYPE_CHECKING
 
 import aiohttp
 from bs4 import BeautifulSoup
+from discord import app_commands
+import discord
 
-import slash
+from utils.context import WhiteContext
 from .wiki import Wiki
 from .errors import WikiNotFound
+if TYPE_CHECKING:
+    from bot import Bot
 
-class WikiConverter(slash.AutocompleteConverter):
-    async def get_suggestions(self, ctx, argument):
-        if argument == "":
+class WikiConverter(app_commands.Transformer):
+    @classmethod
+    async def autocomplete(cls, interaction: discord.Interaction, value: str):
+        ctx = await WhiteContext.from_interaction(interaction)
+        if value == "":
+            if ctx.settings is None:
+                return []
+
             await ctx.settings.query_wiki_info()
             return [
-                slash.Choice(name=ctx.settings.bound_wiki_name, value=ctx.settings.bound_wiki_url)
+                app_commands.Choice(name=ctx.settings.bound_wiki_name, value=ctx.settings.bound_wiki_url) # type: ignore  # information queried
             ]
         
         async with ctx.bot.session.get(
             "https://community.fandom.com/wiki/Special:NewWikis",
-            params=dict(start=argument, limit=5)
+            params=dict(start=value, limit=5)
         ) as resp:
             text = await resp.text()
 
         soup = BeautifulSoup(text, "html.parser")
         return [
-            slash.Choice(name=element.text, value=element.get("href"))
+            app_commands.Choice(name=element.text, value=element.get("href"))
             for element in soup.select(".mw-spcontent ul li a")
         ]
 
-    async def convert(self, ctx, argument):
+    @classmethod
+    def common_convert(cls, bot: "Bot", argument: str) -> Wiki:
         if re.match(r"https?:\/\/", argument):
-            return Wiki(url=argument, session=ctx.bot.session)
+            return Wiki(url=argument, session=bot.session)
 
-        return Wiki.from_dot_notation(argument, session=ctx.bot.session)
+        return Wiki.from_dot_notation(argument, session=bot.session)
 
-class PageConverter(slash.AutocompleteConverter):
-    async def get_suggestions(self, ctx, argument):
-        if ctx.kwargs.get("wiki"):
-            wiki = await WikiConverter().convert(ctx, ctx.kwargs["wiki"])
+    @classmethod
+    async def convert(cls, ctx: WhiteContext, argument: str) -> Wiki:
+        return cls.common_convert(ctx.bot, argument)
+
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> Wiki:
+        return cls.common_convert(interaction.client, value)
+
+
+class PageConverter(app_commands.Transformer):
+    @classmethod
+    async def autocomplete(cls, interaction: discord.Interaction, argument: str):
+        ctx = await WhiteContext.from_interaction(interaction)
+        
+        if interaction.namespace.wiki:
+            wiki = await WikiConverter().convert(ctx, interaction.namespace.wiki)
         else:
+            if ctx.settings is None:
+                return []
+                
             await ctx.settings.query_wiki_info()
             wiki = ctx.wiki
         
@@ -51,9 +77,14 @@ class PageConverter(slash.AutocompleteConverter):
             return []
 
         return [
-            slash.Choice(name=suggestion, value=suggestion)
+            app_commands.Choice(name=suggestion, value=suggestion)
             for suggestion in search["suggestions"]
         ]
 
-    async def convert(self, ctx, argument):
+    @classmethod
+    async def convert(cls, ctx, argument):
         return argument
+
+    @classmethod
+    async def transform(cls, interaction: discord.Interaction, value: str) -> str:
+        return value

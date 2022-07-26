@@ -4,17 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"discord.py" = {editable = true, git = "https://github.com/Herbstblatt/discord.py"}
+asyncpg = "*"
+bs4 = "*"
+"discord.py" = {ref = "efdda63", git = "https://github.com/Rapptz/discord.py"}
 jishaku = "*"
 pyyaml = "*"
 psycopg2-binary = "*"
-asyncpg = "*"
-bs4 = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.8"
+python_version = "3.10"
 
 [scripts]
 start = "python bot.py"
