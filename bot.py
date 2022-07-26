@@ -17,6 +17,7 @@ def _prefix_callable(bot, msg):
 
 class Bot(commands.Bot):
     pool: asyncpg.Pool
+    prefixes: Dict[int, str]
 
     def __init__(self):
         intents = discord.Intents(
