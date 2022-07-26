@@ -14,11 +14,11 @@ test_guilds:
 
 cogs:
   - jishaku
-  - cogs.help
+#  - cogs.help
   - cogs.info
   - cogs.fandom
   - cogs.wikilinks
 
 emojis:
-  success: "\N{WHITE HEAVY CHECK MARK}"
-  error: "<:no:525380850234163200>"
+  success: "<:success:1001451792623730758>"
+  error: "<:error:1001451516969877504>"
