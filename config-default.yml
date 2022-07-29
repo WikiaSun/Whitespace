@@ -17,6 +17,7 @@ cogs:
 #  - cogs.help
   - cogs.info
   - cogs.fandom
+  - cogs.verification
   - cogs.wikilinks
 
 emojis:
