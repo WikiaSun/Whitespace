@@ -1,15 +1,18 @@
+import string
 from typing import TYPE_CHECKING, Optional
 import discord
 from discord.ext import commands
 
 from .errors import AlreadyVerified, OwnershipNotProved, RequirementsNotSatsified
 from .models import Account, RequirementsCheckResult, RequirementsCheckResultStatus, User
-from config import config
+from config import config, strings as _strings
 from utils.converters import AccountConverter
 
 if TYPE_CHECKING:
     from bot import Bot
     from utils.context import WhiteContext
+
+strings = _strings.verification
 
 class Verification(commands.Cog):
     def __init__(self, bot: "Bot"):
@@ -115,7 +118,7 @@ class Verification(commands.Cog):
         await self.verify(ctx, ctx.author, account)
 
         em = discord.Embed(
-            description=f"Вы были успешно верифицированы на сервере {ctx.guild.name}.",
+            description=strings.verification_successful.format(guild=ctx.guild.name),
             color=discord.Color.green(),
             timestamp=discord.utils.utcnow()
         )
@@ -125,12 +128,12 @@ class Verification(commands.Cog):
             icon_url=account.avatar_url
         )
         em.add_field(
-            name="Аккаунт на Фэндоме",
-            value=f"{config.emojis.success} Владение подтверждено",
+            name=strings.account_header,
+            value=f"{config.emojis.success} {strings.ownership_confirmed}",
         )
         em.add_field(
-            name="Цензы",
-            value=f"{config.emojis.success} Все цензы пройдены"
+            name=strings.requirements_header,
+            value=f"{config.emojis.success} {strings.requirements_satsified}"
         )
         await ctx.send(embed=em)
         

@@ -1,5 +1,5 @@
 verification:
-  verification_successful: Вы были успешно верифицированы на сервере {server_name}
+  verification_successful: Вы были успешно верифицированы на сервере {guild}
   account_header: Аккаунт на Фэндоме
   ownership_confirmed: Владение подтверждено
   requirements_header: Цензы

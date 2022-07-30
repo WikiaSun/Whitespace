@@ -57,3 +57,6 @@ with open("config-default.yml") as f:
 if Path("config.yml").exists():
     with open("config.yml") as f:
         config.update(yaml.safe_load(f))
+
+with open("resourses/strings.yml") as f:
+    strings = _BotConfigImpl(yaml.safe_load(f))
