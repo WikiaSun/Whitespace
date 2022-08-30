@@ -1,12 +1,14 @@
 verification:
-  verification_successful: Вы были успешно верифицированы на сервере {guild}
+  verification_successful: |
+    Вы были успешно верифицированы на сервере {guild}
   account_header: Аккаунт на Фэндоме
   ownership_confirmed: Владение подтверждено
   requirements_header: Цензы
   requirements_satsified: Все цензы пройдены
 
   how_to_fix: Как исправить проблему?
-  account_does_not_exist_message: К сожалению, верификация не удалась, поскольку аккаунта **{account}** не существует.
+  account_does_not_exist_message: |
+    К сожалению, верификация не удалась, поскольку аккаунта **{account}** не существует.
   account_does_not_exist_instructions: Проверьте написание никнейма. Возможно, вы опечатались.
 
   ownership_not_confirmed_message: >
@@ -20,20 +22,29 @@ verification:
   requirements_not_satsified_message: >
     К сожалению, верификация не удалась, поскольку Вы не прошли по цензам, установленным администрацией сервера. Ниже указаны пункты, которым не соответствует Ваш аккаунт.
   requirement_descriptions:
-    edits: Иметь более **{edits}** правок на вики
-    registration: Зарегистрироваться на Фэндоме более **{days}** дней назад
-    joining: Присоединиться к вики более **{days}** дней назад
+    edits: |
+      Иметь более **{edits}** правок на вики
+    registration: |
+      Зарегистрироваться на Фэндоме более **{days}** дней назад
+    joining: |
+      Присоединиться к вики более **{days}** дней назад
     local_block: Не иметь локальной блокировки
-    local_block_days: Не иметь локальной блокировки длительностью более {days} {plural(days, 'дня', 'дней')}
+    local_block_days: |
+      Не иметь локальной блокировки длительностью более {days} {plural(days, 'дня', 'дней')}
     global_block: Не иметь глобальной блокировки
   requirement_messages:
-    edits: Сейчас у вас *{edits}* правок
-    registration: Вы зарегистрированы *{days}* дней назад
-    joining: Вы присоединились *{days}* дней назад
-    local_block: Ваш аккаунт локально заблокирован до {time}
+    edits: |
+      Сейчас у вас *{edits}* правок
+    registration: | 
+      Вы зарегистрированы *{days}* дней назад
+    joining: |
+      Вы присоединились *{days}* дней назад
+    local_block: |
+      Ваш аккаунт локально заблокирован до {time}
     local_block_on_other_account: >
       Один из Ваших аккаунтов локально заблокирован. В целях сохранения приватности имя аккаунта скрыто. Вы можете посмотреть статус своих аккаунтов командой `/accounts list`.
     global_block: Ваш аккаунт глобально заблокирован
     global_block_on_other_account: >
       Один из Ваших аккаунтов локально заблокирован. В целях сохранения приватности имя аккаунта скрыто. Вы можете посмотреть статус своих аккаунтов командой `/accounts list`.
-  hidden_requirements: {len} {plural(len, 'пройденный', 'пройденных')} {plural(len, 'ценз скрыт', 'ценза скрыто', 'цензов скрыто')}
+  hidden_requirements: |
+    {len} {plural(len, 'пройденный', 'пройденных')} {plural(len, 'ценз скрыт', 'ценза скрыто', 'цензов скрыто')}

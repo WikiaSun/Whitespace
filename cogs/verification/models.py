@@ -11,9 +11,9 @@ if TYPE_CHECKING:
 @dataclass
 class Account:
     name: str
-    id: Optional[int]
-    discord_tag: str
     wiki: "Wiki"
+    id: Optional[int] = None
+    discord_tag: Optional[str] = None
 
     @property
     def page_url(self):
@@ -22,7 +22,19 @@ class Account:
     @property
     def avatar_url(self):
         return f"https://services.fandom.com/user-avatar/user/{self.id}/avatar"
+
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def __eq__(self, other: "Account") -> bool:
+        return self.name == other.name
     
+@dataclass
+class Binding:
+    fandom_account: Account
+    discord_account: discord.abc.Snowflake
+    trusted: bool
+    active: bool
 
 @dataclass
 class User:
@@ -31,9 +43,8 @@ class User:
     The user is a person that can have multiple accounts both on Fandom an Discord.
     """
     _bot: "Bot"
-    fandom_accounts: List[Account] = field(default_factory=list)
-    discord_accounts: List[discord.abc.Snowflake] = field(default_factory=list)
-
+    bindings: List[Binding] = field(default_factory=list)
+    
     async def add_account(
         self,
         *,
@@ -43,6 +54,14 @@ class User:
         trusted: bool = True
     ):
         pass
+
+    @property
+    def fandom_accounts(self) -> List[Account]:
+        return list(set(b.fandom_account for b in self.bindings))
+
+    @property
+    def discord_accounts(self) -> List[discord.abc.Snowflake]:
+        return list(set(b.discord_account for b in self.bindings))
 
 class RequirementsCheckResultStatus(enum.Enum):
     ok = True

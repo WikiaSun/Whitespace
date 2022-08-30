@@ -1,10 +1,11 @@
-import string
 from typing import TYPE_CHECKING, Optional
 import discord
 from discord.ext import commands
 
+from utils.wiki import Wiki
+
 from .errors import AlreadyVerified, OwnershipNotProved, RequirementsNotSatsified
-from .models import Account, RequirementsCheckResult, RequirementsCheckResultStatus, User
+from .models import Account, Binding, RequirementsCheckResult, RequirementsCheckResultStatus, User
 from config import config, strings as _strings
 from utils.converters import AccountConverter
 
@@ -22,7 +23,6 @@ class Verification(commands.Cog):
         self,
         fandom_name: Optional[str] = None, 
         discord_id: Optional[int] = None,
-        guild_id: Optional[int] = None,
         trusted_only: bool = True
     ) -> Optional["User"]:
         """Fetches fandom-discord bindings from the database and returns Account object with that data.
@@ -30,13 +30,48 @@ class Verification(commands.Cog):
         Arguments:
             fandom_name (Optional[str]): Account name on Fandom
             discord_id (Optional[int]): Account id on Discord
-            guild_id (Optional[int]): A guild id to fetch the binding for
             trusted_only (bool): Whether to fetch only trusted bindings
 
         Returns:
-            An Account object or None when no bindings satsify the given parameters.
+            An User object or None when no bindings satsify the given parameters.
         """
-        pass
+        conditions = []
+        args = []
+        if fandom_name is not None:
+            conditions.append(f"fandom_name = ${len(conditions) + 1}")
+            args.append(fandom_name)
+        if discord_id is not None:
+            conditions.append(f"discord_id = ${len(conditions) + 1}")
+            args.append(discord_id)
+        if trusted_only:
+            conditions.append(f"trusted = true")
+
+        async with self.bot.pool.acquire() as conn:
+            results = await conn.fetch(f"""
+                WITH RECURSIVE tmp AS (
+                    SELECT * 
+                    FROM users
+                    WHERE {" AND ".join(conditions)}
+                    UNION
+                        SELECT users.fandom_name, users.discord_id, users.guild_id, users.trusted, users.active
+                        FROM users
+                        JOIN tmp ON users.fandom_name = tmp.fandom_name or users.discord_id = tmp.discord_id
+                        {"WHERE users.trusted = true" if trusted_only else ""}
+                ) SELECT * FROM tmp;
+           """, *args)
+        
+        if len(results) == 0:
+            return None
+        
+        bindings = [
+            Binding(
+                fandom_account=Account(name=result["fandom_name"], wiki=Wiki.from_dot_notation("ru.c")),
+                discord_account=discord.Object(id=result["discord_id"]),
+                trusted=result["trusted"],
+                active=result["active"]
+            ) for result in results
+        ]
+        return User(_bot=self.bot, bindings=bindings)
 
     async def is_verified(self, ctx: "WhiteContext", member: discord.Member) -> bool:
         """Checks whether the given account is verified in the given context.
