@@ -128,6 +128,20 @@ class Info(commands.Cog, name="Информация"):
             """,
             inline=True
         )
+        if await self.bot.is_owner(ctx.author):
+            await ctx.settings.query("flags")
+            flags = []
+            for name, value in ctx.settings.flags:
+                if value:
+                    flags.append(name)
+            
+            if flags:
+                em.add_field(
+                    name="Internal",
+                    value=f"""Flags: `{'`, `'.join(flags)}`""",
+                    inline=False
+                )
+        
         await ctx.send(embed=em)
 
 async def setup(bot: "Bot"):
