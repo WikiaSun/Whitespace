@@ -3,6 +3,8 @@ from typing import Optional
 
 from discord.ext import commands
 
+from .flags import GuildFlags
+
 @dataclass
 class GuildSettings:
     id: int
@@ -12,6 +14,8 @@ class GuildSettings:
 
     bound_wiki_url: Optional[str] = None
     bound_wiki_name: Optional[str] = None
+
+    flags: Optional[GuildFlags] = None
 
     def __post_init__(self, bot):
         self._bot = bot
@@ -44,6 +48,8 @@ class GuildSettings:
             result = await conn.fetchrow(query, self.id)
         
         for field, value in result.items():
+            if field == "flags":
+                value = GuildFlags(value)
             setattr(self, field, value)
         
         return result
@@ -61,12 +67,17 @@ class GuildSettings:
             query += f"{field}=${idx + 1} "
         query += f"WHERE id=${len(kwargs) + 1}"
 
+        if "flags" in kwargs:
+            kwargs["flags"] = kwargs["flags"].value
+
         async with self._pool.acquire() as conn:
             result = await conn.execute(query, *kwargs.values(), self.id)
 
         for field, value in kwargs.items():
             if field == "prefix":
                 self._bot.prefixes[self.id] = value
+            elif field == "flags":
+                value = GuildFlags(value)
                 
             setattr(self, field, value)
 
