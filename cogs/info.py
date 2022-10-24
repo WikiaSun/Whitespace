@@ -129,7 +129,10 @@ class Info(commands.Cog, name="Информация"):
             inline=True
         )
         if await self.bot.is_owner(ctx.author):
+            assert ctx.settings is not None
+            
             await ctx.settings.query("flags")
+            assert ctx.settings.flags is not None
             flags = []
             for name, value in ctx.settings.flags:
                 if value:

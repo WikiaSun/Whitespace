@@ -1,11 +1,14 @@
+from typing import Optional, Type
+
+
 class Flag:
     def __init__(self, value: int):
         self.value = value
 
-    def __get__(self, obj, objtype=None):
+    def __get__(self, obj: "GuildFlags", objtype: Optional[Type["GuildFlags"]] = None) -> bool:
         return self.value & obj.value == self.value
 
-    def __set__(self, obj, value):
+    def __set__(self, obj: "GuildFlags", value: bool) -> None:
         if value:
             obj.value |= self.value
         else:
@@ -15,7 +18,7 @@ class Flag:
 class GuildFlags:
     beta_info_commands_enabled = Flag(1 << 0)
 
-    def __init__(self, value=0):
+    def __init__(self, value: int = 0):
         self.value = value
 
     def __iter__(self):
