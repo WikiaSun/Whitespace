@@ -7,6 +7,7 @@ import discord
 from discord.utils import format_dt
 
 from config import config
+from utils.checks import guild_has_flag
 from utils.converters import PageConverter, WikiConverter
 from utils.errors import WikiNotFound
 from utils.wiki import Wiki
@@ -19,6 +20,12 @@ class Fandom(commands.Cog, name="Фэндом"):
 
     def __init__(self, bot):
         self.bot = bot
+
+    async def cog_check(self, ctx: "WhiteContext") -> bool:
+        if ctx.guild is None:
+            return True
+        
+        return await guild_has_flag(ctx, "beta_info_commands_enabled")
 
     @commands.hybrid_command()
     async def page(
@@ -88,8 +95,6 @@ class Fandom(commands.Cog, name="Фэндом"):
         
         if isinstance(unwrapped, WikiNotFound):
             await ctx.send(f"{config.emojis.error} | Вики с данным адресом не найдена.")
-        else:
-            raise error
-
+        
 async def setup(bot: commands.Bot):
     await bot.add_cog(Fandom(bot))

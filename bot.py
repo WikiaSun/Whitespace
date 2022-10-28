@@ -6,6 +6,7 @@ import asyncpg
 
 from config import config
 from utils.context import WhiteContext
+from utils.errors import MissingRequiredFlag
 
 def _prefix_callable(bot, msg):
     if not msg.guild:
@@ -82,6 +83,20 @@ class Bot(commands.Bot):
     async def on_guild_join(self, guild):
         async with self.pool.acquire() as conn:
             await conn.execute("INSERT INTO wh_guilds (id) VALUES ($1)", str(guild.id))
+
+    async def on_command_error(self, ctx: WhiteContext, error: commands.CommandError) -> None:
+        unwrapped = error
+        while original := getattr(unwrapped, "original", None):
+            unwrapped = original
+        
+        if isinstance(unwrapped, MissingRequiredFlag):
+            if unwrapped.flag.startswith("beta"):
+                text = "Эта команда находится в бета-тестировании. Попросите администраторов сервера включить соответствующую ей функцию в настройках."
+            else:
+                text = "На вашем сервере отключен доступ к этой функции"
+            await ctx.send(f"{config.emojis.error} | {text}", ephemeral=True)
+        else:
+            raise error
         
 
 bot = Bot()
