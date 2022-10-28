@@ -94,7 +94,8 @@ class Bot(commands.Bot):
                 text = "Эта команда находится в бета-тестировании. Попросите администраторов сервера включить соответствующую ей функцию в настройках."
             else:
                 text = "На вашем сервере отключен доступ к этой функции"
-            await ctx.send(f"{config.emojis.error} | {text}", ephemeral=True)
+            if ctx.interaction:
+                await ctx.send(f"{config.emojis.error} | {text}", ephemeral=True)
         else:
             raise error
         
