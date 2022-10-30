@@ -81,7 +81,8 @@ class Bot(commands.Bot):
 
     async def on_guild_join(self, guild):
         async with self.pool.acquire() as conn:
-            await conn.execute("INSERT INTO wh_guilds (id) VALUES ($1)", str(guild.id))
+            await conn.execute("INSERT INTO wh_guilds (id) VALUES ($1)", guild.id)
+        self.prefixes[guild.id] = config.default_prefix
         
 
 bot = Bot()
