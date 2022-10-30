@@ -17,6 +17,7 @@ class Flag:
 
 class GuildFlags:
     beta_info_commands_enabled = Flag(1 << 0)
+    beta_new_wikilinks_enabled = Flag(1 << 1)
 
     def __init__(self, value: int = 0):
         self.value = value
