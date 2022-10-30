@@ -7,7 +7,7 @@ import discord
 from discord.utils import format_dt
 
 from config import config
-from utils.checks import guild_has_flag
+from utils.checks import check_has_flag
 from utils.converters import PageConverter, WikiConverter
 from utils.errors import WikiNotFound
 from utils.wiki import Wiki
@@ -25,7 +25,7 @@ class Fandom(commands.Cog, name="Фэндом"):
         if ctx.guild is None:
             return True
         
-        return await guild_has_flag(ctx, "beta_info_commands_enabled")
+        return await check_has_flag(ctx, "beta_info_commands_enabled")
 
     @commands.hybrid_command()
     async def page(

@@ -6,7 +6,7 @@ from discord.ext import commands
 from discord.utils import format_dt
 
 from config import config
-from utils.checks import guild_has_flag
+from utils.checks import check_has_flag
 
 if TYPE_CHECKING:
     from ..bot import Bot
@@ -20,7 +20,7 @@ class Info(commands.Cog, name="Информация"):
         if ctx.guild is None:
             return True
         
-        return await guild_has_flag(ctx, "beta_info_commands_enabled")
+        return await check_has_flag(ctx, "beta_info_commands_enabled")
     
     @commands.hybrid_command(name="info")
     async def info(self, ctx: "WhiteContext"):
