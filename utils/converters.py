@@ -88,3 +88,7 @@ class PageConverter(app_commands.Transformer):
     @classmethod
     async def transform(cls, interaction: discord.Interaction, value: str) -> str:
         return value
+
+
+class AccountConverter(app_commands.Transformer):
+    pass
