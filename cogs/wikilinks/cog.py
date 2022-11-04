@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 from discord.ext import commands
 import discord
+from utils.checks import guild_has_flag
 
 from utils.context import WhiteContext
 
@@ -129,6 +130,9 @@ class Wikilinks(commands.Cog):
             return
         
         ctx = await self.bot.get_context(message)
+        if not await guild_has_flag(ctx, "beta_new_wikilinks_enabled"):
+            return
+        
         links = await self.find_wikilinks(ctx)
         if len(links) == 0:
             return

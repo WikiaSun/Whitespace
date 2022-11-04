@@ -17,8 +17,13 @@ cogs:
 #  - cogs.help
   - cogs.info
   - cogs.fandom
+  - cogs.config
   - cogs.wikilinks
 
 emojis:
   success: "<:success:1001451792623730758>"
   error: "<:error:1001451516969877504>"
+
+  settings: "<:settings:1035672773462335538>"
+  enabled: "<:enabled:1035672981084590231>"
+  disabled: "<:disabled:1035673046658334832>"

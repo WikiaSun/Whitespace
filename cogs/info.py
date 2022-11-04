@@ -6,6 +6,7 @@ from discord.ext import commands
 from discord.utils import format_dt
 
 from config import config
+from utils.checks import check_has_flag
 
 if TYPE_CHECKING:
     from ..bot import Bot
@@ -15,6 +16,12 @@ class Info(commands.Cog, name="Информация"):
     def __init__(self, bot: "Bot"):
         self.bot = bot
 
+    async def cog_check(self, ctx: "WhiteContext") -> bool:
+        if ctx.guild is None:
+            return True
+        
+        return await check_has_flag(ctx, "beta_info_commands_enabled")
+    
     @commands.hybrid_command(name="info")
     async def info(self, ctx: "WhiteContext"):
         """Показывает информацию о боте"""
@@ -128,6 +135,23 @@ class Info(commands.Cog, name="Информация"):
             """,
             inline=True
         )
+        if await self.bot.is_owner(ctx.author):
+            assert ctx.settings is not None
+            
+            await ctx.settings.query("flags")
+            assert ctx.settings.flags is not None
+            flags = []
+            for name, value in ctx.settings.flags:
+                if value:
+                    flags.append(name)
+            
+            if flags:
+                em.add_field(
+                    name="Internal",
+                    value=f"""Flags: `{'`, `'.join(flags)}`""",
+                    inline=False
+                )
+        
         await ctx.send(embed=em)
 
 async def setup(bot: "Bot"):

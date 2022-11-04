@@ -30,7 +30,8 @@ CREATE TABLE public.wh_guilds (
     id bigint NOT NULL,
     bound_wiki_url text DEFAULT 'https://community.fandom.com/ru'::text,
     prefix text DEFAULT '!'::text,
-    bound_wiki_name text
+    bound_wiki_name text,
+    flags bigint DEFAULT 0
 );
 
 
@@ -81,4 +82,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20210519201710'),
     ('20211006194734'),
     ('20211222113737'),
-    ('20211226164418');
+    ('20211226164418'),
+    ('20221023182737');

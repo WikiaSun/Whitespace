@@ -49,6 +49,9 @@ class BotCredentials:
 class BotEmojis:
     success: str
     error: str
+    settings: str
+    enabled: str
+    disabled: str
 
 
 with open("config-default.yml") as f:
@@ -57,3 +60,6 @@ with open("config-default.yml") as f:
 if Path("config.yml").exists():
     with open("config.yml") as f:
         config.update(yaml.safe_load(f))
+
+with open("resources/strings.yml") as f:
+    strings = _BotConfigImpl(yaml.safe_load(f))
