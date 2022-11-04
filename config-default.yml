@@ -16,7 +16,6 @@ cogs:
   - jishaku
 #  - cogs.help
   - cogs.info
-  - cogs.fandom
   - cogs.config
   - cogs.wikilinks
 

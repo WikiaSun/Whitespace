@@ -23,6 +23,19 @@ CREATE TABLE public.schema_migrations (
 
 
 --
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    fandom_name text,
+    discord_id bigint,
+    guild_id bigint,
+    trusted boolean,
+    active boolean
+);
+
+
+--
 -- Name: wh_guilds; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -70,6 +83,13 @@ ALTER TABLE ONLY public.wh_wikilink_webhooks
 
 
 --
+-- Name: users_fandom_name_discord_id_guild_id_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX users_fandom_name_discord_id_guild_id_idx ON public.users USING btree (fandom_name, discord_id, guild_id);
+
+
+--
 -- PostgreSQL database dump complete
 --
 
@@ -83,4 +103,5 @@ INSERT INTO public.schema_migrations (version) VALUES
     ('20211006194734'),
     ('20211222113737'),
     ('20211226164418'),
+    ('20220730054441'),
     ('20221023182737');
