@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 asyncpg = "*"
 bs4 = "*"
-"discord.py" = {ref = "efdda63", git = "https://github.com/Rapptz/discord.py"}
+"discord.py" = "~=2.0"
 jishaku = "*"
 pyyaml = "*"
 psycopg2-binary = "*"

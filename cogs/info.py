@@ -1,4 +1,5 @@
 from datetime import datetime
+import io
 import random
 from typing import TYPE_CHECKING
 
@@ -11,6 +12,7 @@ from discord.utils import format_dt
 from config import config
 from utils.checks import check_has_flag
 from utils.wiki import Wiki, WikiNotFound
+from utils.api_data import WikiHub
 from utils import converters
 
 if TYPE_CHECKING:
@@ -161,6 +163,72 @@ class Info(commands.Cog, name="Информация"):
                     inline=False
                 )
         
+        await ctx.send(embed=em)
+    
+    @info.command()
+    async def wiki(
+        self,
+        ctx: "WhiteContext",
+        *,
+        wiki: Wiki = commands.param(converter=converters.WikiConverter)
+    ):
+        """Показывает информацию об определённой вики.
+        
+        Аргументы:
+            wiki: Название вики или её адрес в формате ru.community
+        """
+        await ctx.defer()
+        data = await wiki.fetch_data()
+        
+        em = discord.Embed(
+            description=data.description,
+            color=1437552
+        )
+        em.set_author(
+            name=data.name, 
+            url=data.url, 
+            icon_url=data.favicon_url
+        )
+        em.set_image(url=data.wordmark_url)
+
+        match data.hub:
+            case WikiHub.comics:
+                hub = "Комиксы"
+            case WikiHub.tv:
+                hub = "ТВ"
+            case WikiHub.movies:
+                hub = 'Кино'
+            case WikiHub.books:
+                hub = 'Книги'
+            case WikiHub.gaming:
+                hub = 'Игры'
+            case ( WikiHub.lifestyle 
+                 | WikiHub.travel 
+                 | WikiHub.creative 
+                 | WikiHub.toys 
+                 | WikiHub.education ):
+                hub = "Увлечения"
+            case WikiHub.other:
+                hub = "Другое"
+            case _:
+                hub = "Неизвестно"
+
+        em.add_field(name="Хаб", value=hub, inline=True)
+        em.add_field(name="ID", value=data.id, inline=True)
+        em.add_field(name="Дата основания", value=discord.utils.format_dt(data.creation_date), inline=True)
+        
+        em.add_field(name='Статистика', value=(
+			f'**Статей**: {data.article_count}\n'
+			f'**Страниц**: {data.page_count}\n'
+			f'**Изображений**: {data.image_count}\n'
+			f'**Правок**: {data.revision_count}\n'
+		), inline=True)
+        em.add_field(name='\u200B', value=(
+			f'**Сообщений в обсуждениях**: {data.post_count}\n'
+			f'**Активных участников**: {data.user_count}\n'
+			f'**Администраторов**: {data.admin_count}'
+		), inline=True)
+
         await ctx.send(embed=em)
     
     @info.command()

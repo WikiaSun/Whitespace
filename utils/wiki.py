@@ -1,9 +1,12 @@
+import asyncio
+from datetime import datetime
 from typing import Any, Optional
 from urllib.parse import urlencode
 
 import aiohttp
 
-from utils.errors import WikiNotFound
+from .api_data import WikiData, WikiHub
+from .errors import WikiNotFound
 
 class Wiki:
     def __init__(self, url: Optional[str] = None, id: Optional[int] = None, *, session: Optional[aiohttp.ClientSession] = None):
@@ -52,6 +55,50 @@ class Wiki:
             params["oldid"] = oldid
         
         return f"{self.url}/?{urlencode(params)}"
+    
+    async def fetch_data(self) -> WikiData:
+        wiki_variables = await self.query_nirvana(controller="MercuryApi", method="getWikiVariables")
+
+        wiki_id = self.id or wiki_variables["data"]["id"]
+        mainpage = wiki_variables["data"]["mainPageTitle"]
+        try:
+            hub = WikiHub(wiki_variables["data"]["vertical"])
+        except ValueError:
+            hub = WikiHub.other
+
+        central_wiki = Wiki.from_dot_notation("community", session=self._session)
+        tasks = [
+            self.query(
+                meta="siteinfo",
+                siprop="general|statistics",
+                prop="revisions",
+                rvdir="newer",
+                rvlimit=1,
+                titles=mainpage
+            ),
+            central_wiki.query_nirvana(
+                controller="WikisApi",
+                method="getDetails",
+                ids=wiki_id
+            )
+        ]
+        results = await asyncio.gather(*tasks)
+        
+        return WikiData(
+            id=wiki_id,
+            name=results[1]["items"][str(wiki_id)]["name"],
+            url=self.url or results[1]["items"][str(wiki_id)]["url"],
+            description=results[1]["items"][str(wiki_id)]["desc"],
+            creation_date=datetime.fromisoformat(list(results[0]["query"]["pages"].values())[0]["revisions"][0]["timestamp"][:-1]),
+            hub=hub,
+            article_count=results[0]["query"]["statistics"]["articles"],
+            page_count=results[0]["query"]["statistics"]["pages"],
+            revision_count=results[0]["query"]["statistics"]["edits"],
+            image_count=results[0]["query"]["statistics"]["images"],
+            post_count=results[1]["items"][str(wiki_id)]["stats"]["discussions"],
+            user_count=results[0]["query"]["statistics"]["activeusers"],
+            admin_count=results[0]["query"]["statistics"]["admins"]
+        )
     
     async def query(self, **params) -> dict[str, Any]:
         """Queries MediaWiki api with given params"""
