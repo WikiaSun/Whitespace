@@ -5,6 +5,7 @@ This file contains wrapper classes around the data that fandom api sends.
 from dataclasses import dataclass
 import datetime
 import enum
+from typing import Optional
 
 class WikiHub(enum.Enum):
     comics = "comics"
@@ -44,3 +45,14 @@ class WikiData:
     @property
     def favicon_url(self):
         return "https://api.statvoo.com/favicon/?url=" + self.url
+
+@dataclass
+class PageData:
+    name: str
+    id: int
+    description: str
+    thumbnail: Optional[str]
+
+    last_revision_id: int
+    last_revision_date: datetime.datetime
+    last_revision_author: str

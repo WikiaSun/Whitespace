@@ -7,6 +7,9 @@ class WhiteException(Exception):
 class WikiNotFound(WhiteException):
     pass
 
+class PageNotFound(WhiteException):
+    pass
+
 class WhiteCommandException(WhiteException, commands.CommandError):
     pass
 

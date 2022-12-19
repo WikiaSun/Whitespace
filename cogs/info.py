@@ -11,6 +11,7 @@ from discord.utils import format_dt
 
 from config import config
 from utils.checks import check_has_flag
+from utils.errors import PageNotFound
 from utils.wiki import Wiki, WikiNotFound
 from utils.api_data import WikiHub
 from utils import converters
@@ -253,52 +254,45 @@ class Info(commands.Cog, name="Информация"):
                 await ctx.settings.query_wiki_info()
                 wiki = ctx.wiki
         
-        try:
-            data = await wiki.query_nirvana(
-                controller="ArticlesApiController",
-                method="getDetails",
-                titles=name.replace(" ", "_"),
-                abstract=500
-            )
-        except aiohttp.ContentTypeError as exc:
-            raise WikiNotFound from exc
-
-        try:
-            data = list(data["items"].values())[0]
-        except IndexError:
-            await ctx.send(":warning: Данной страницы не существует. Выполняю поиск...")
-            return
+        data = await wiki.fetch_page_data(name)
         
         em = discord.Embed(
-            title=data["title"],
+            title=data.name,
             url=wiki.url_to(name), 
-            description=data["abstract"], 
+            description=data.description, 
             color=0xe35ff5
         )
-        edit_date = format_dt(datetime.fromtimestamp(int(data['revision']['timestamp'])))
+        edit_date = format_dt(data.last_revision_date)
         em.add_field(
             name="Последняя правка", 
             value="{edit_date} от [{user}]({profile}) ([разн.]({diff}) | [история]({history}))".format(
                 edit_date=edit_date,
-                user=data['revision']['user'],
-                profile=wiki.url_to("User:" + data['revision']['user']),
-                diff=wiki.diff_url(data['revision']['id']),
+                user=data.last_revision_author,
+                profile=wiki.url_to("User:" + data.last_revision_author),
+                diff=wiki.diff_url(data.last_revision_id),
                 history=wiki.url_to(name, action="history")
             )
         )
-        if data["thumbnail"]:
-            em.set_thumbnail(url=data["thumbnail"])
-        em.set_footer(text=f"ID: {data['id']}")
+        if data.thumbnail:
+            em.set_thumbnail(url=data.thumbnail)
+
+        em.set_footer(text=f"ID: {data.id}")
         await ctx.send(embed=em)
 
     @page.error
-    async def page_error(self, ctx, error: commands.CommandError):
+    @wiki.error
+    async def page_error(self, ctx: "WhiteContext", error: commands.CommandError):
         unwrapped = error
         while original := getattr(unwrapped, "original", None):
             unwrapped = original
         
         if isinstance(unwrapped, WikiNotFound):
-            await ctx.send(f"{config.emojis.error} | Вики с данным адресом не найдена.")
+            await ctx.send(
+                f"{config.emojis.error} | Вики с данным адресом не найдена. Обратите внимание, адрес вики надо указывать в формате `языковой_код.название`, например `ru.community`.",
+                ephemeral=True
+            )
+        elif isinstance(unwrapped, PageNotFound):
+            await ctx.send(f"{config.emojis.error} | Страница с данным адресом не найдена.", ephemeral=True)
     
 
 async def setup(bot: "Bot"):

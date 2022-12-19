@@ -5,8 +5,8 @@ from urllib.parse import urlencode
 
 import aiohttp
 
-from .api_data import WikiData, WikiHub
-from .errors import WikiNotFound
+from .api_data import PageData, WikiData, WikiHub
+from .errors import PageNotFound, WikiNotFound
 
 class Wiki:
     def __init__(self, url: Optional[str] = None, id: Optional[int] = None, *, session: Optional[aiohttp.ClientSession] = None):
@@ -57,7 +57,12 @@ class Wiki:
         return f"{self.url}/?{urlencode(params)}"
     
     async def fetch_data(self) -> WikiData:
-        wiki_variables = await self.query_nirvana(controller="MercuryApi", method="getWikiVariables")
+        """Fetches various information about this wiki from the api."""
+        
+        try:
+            wiki_variables = await self.query_nirvana(controller="MercuryApi", method="getWikiVariables")
+        except aiohttp.ContentTypeError as exc:
+            raise WikiNotFound from exc
 
         wiki_id = self.id or wiki_variables["data"]["id"]
         mainpage = wiki_variables["data"]["mainPageTitle"]
@@ -98,6 +103,34 @@ class Wiki:
             post_count=results[1]["items"][str(wiki_id)]["stats"]["discussions"],
             user_count=results[0]["query"]["statistics"]["activeusers"],
             admin_count=results[0]["query"]["statistics"]["admins"]
+        )
+
+    async def fetch_page_data(self, name: str) -> PageData:
+        """Fetches information about the page on this wiki from the api."""
+        
+        try:
+            data = await self.query_nirvana(
+                controller="ArticlesApiController",
+                method="getDetails",
+                titles=name.replace(" ", "_"),
+                abstract=500
+            )
+        except aiohttp.ContentTypeError as exc:
+            raise WikiNotFound from exc
+
+        try:
+            data = list(data["items"].values())[0]
+        except IndexError:
+            raise PageNotFound
+
+        return PageData(
+            name=data["title"],
+            id=int(data["id"]),
+            description=data["abstract"],
+            thumbnail=data.get("thumbnail"),
+            last_revision_author=data['revision']['user'],
+            last_revision_date=datetime.fromtimestamp(int(data['revision']['timestamp'])),
+            last_revision_id=data['revision']['id']
         )
     
     async def query(self, **params) -> dict[str, Any]:
